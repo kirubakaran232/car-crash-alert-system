@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accident Alert Hub</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #74ebd5 0%, #acb6e5 100%);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      color: #333;
+    }
+    h1 {
+      margin-top: 30px;
+      font-size: 2.5rem;
+      color: #2c3e50;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    }
+    #vibration-info {
+      background: #ffffffcc;
+      padding: 20px 30px;
+      margin-top: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 500px;
+      text-align: left;
+    }
+    #vibration-info p {
+      margin: 10px 0;
+      font-size: 1.2rem;
+    }
+    .status {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    .alert {
+      color: #e74c3c;
+    }
+    .safe {
+      color: #27ae60;
+    }
+    .button-container {
+      margin-top: 20px;
+    }
+    button {
+      background: #27ae60;
+      color: white;
+      padding: 12px 24px;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #219150;
+    }
+    footer {
+      margin-top: 50px;
+      font-size: 0.9rem;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Accident Alert Hub</h1>
+
+  <div id="vibration-info">
+    <p><strong>Vibration:</strong> <span id="vibration-value">0</span></p>
+    <p><strong>Alert Needed:</strong> <span id="alert-needed">No</span></p>
+    <p><strong>Alert Sent:</strong> <span id="alert-sent">No</span></p>
+  </div>
+
+  <div class="button-container">
+    <button id="confirm-safe-button" onclick="confirmSafe()">
+      I Am Safe
+    </button>
+  </div>
+
+  <div id="confirmation-status" class="status"></div>
+
+  <footer>
+    Accident Detection System © 2025
+  </footer>
+
+  <script>
+    function confirmSafe() {
+      fetch("/confirm_safe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+      .then((response) => response.json())
+      .then((data) => {
+        document.getElementById("confirmation-status").innerHTML = data.message;
+        document.getElementById("confirmation-status").classList.add("safe");
+      })
+      .catch((error) => {
+        console.log("Error:", error);
+      });
+    }
+
+    function updateStatus() {
+      fetch("/status")
+        .then((response) => response.json())
+        .then((data) => {
+          document.getElementById("vibration-value").innerText = data.vibration;
+          document.getElementById("alert-needed").innerText = data.alert_needed ? "Yes" : "No";
+          document.getElementById("alert-sent").innerText = data.alert_sent ? "Yes" : "No";
+          
+          // Optional: Add red color if alert is needed
+          if (data.alert_needed) {
+            document.getElementById("alert-needed").classList.add("alert");
+          } else {
+            document.getElementById("alert-needed").classList.remove("alert");
+          }
+        })
+        .catch((error) => {
+          console.log("Error fetching status:", error);
+        });
+    }
+
+    setInterval(updateStatus, 2000);
+  </script>
+
+</body>
+</html>
