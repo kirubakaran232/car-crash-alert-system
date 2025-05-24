@@ -5,19 +5,24 @@ import threading
 import time
 from twilio.rest import Client
 import serial.tools.list_ports
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
 # Serial setup
-SERIAL_PORT = 'COM12'  # Update this based on your system
+SERIAL_PORT = os.getenv('SERIAL_PORT')
 ser = None
 
 # Twilio credentials
-TWILIO_ACCOUNT_SID = 'ACbac8ab2d2563f88493d8a81293fbd76a'
-TWILIO_AUTH_TOKEN = 'ca6aa0d38616303af0cc514513f0bece'
-TWILIO_PHONE_NUMBER = '+19127151101'
-TO_PHONE_NUMBER = '+917806815588'
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER')
+TO_PHONE_NUMBER = os.getenv('TO_PHONE_NUMBER')
 
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
@@ -36,7 +41,7 @@ accident_longitude = None
 # Routes
 @app.route('/')
 def index():
-    return render_template('index.html')  # Ensure this file is inside the templates folder
+    return render_template('index.html')
 
 @app.route('/status')
 def status():
@@ -48,11 +53,10 @@ def status():
         'confirmation_time_left': confirmation_time_left
     })
 
-
 @app.route('/confirm_safe', methods=['POST'])
 def confirm_safe():
     global alert_needed, alert_sent, confirmation_time_left, driver_confirmed_safe
-    if alert_sent:  # Avoid resetting if alert was already sent
+    if alert_sent:
         return jsonify({'message': 'Alert already sent. No action needed.'})
     
     driver_confirmed_safe = True
@@ -61,7 +65,6 @@ def confirm_safe():
     confirmation_time_left = 0
     return jsonify({'message': 'Driver confirmed safe. No alert will be sent.'})
 
-# Background logic
 def find_available_ports():
     ports = list(serial.tools.list_ports.comports())
     available_ports = [port.device for port in ports]
@@ -105,8 +108,6 @@ def read_vibration():
             print("[ERROR] Serial read error:", e)
         time.sleep(0.1)
 
-
-
 def start_confirmation_timer():
     global confirmation_timer
     confirmation_timer = threading.Thread(target=confirmation_countdown)
@@ -120,11 +121,10 @@ def confirmation_countdown():
     if alert_needed and not driver_confirmed_safe:
         send_alert_message()
         alert_sent = True
-    alert_needed = False  # Reset after timer ends
+    alert_needed = False
 
 def send_alert_message():
     try:
-        # Use the latitude and longitude captured from the accident message
         maps_link = f"https://maps.google.com/?q={accident_latitude},{accident_longitude}"
         message_body = f"🚨 Accident detected! No response from driver 💔.\nLive location: {maps_link}"
 
@@ -137,8 +137,7 @@ def send_alert_message():
     except Exception as e:
         print("Error sending Twilio SMS:", e)
 
-# Run app
 if __name__ == '__main__':
-    open_serial_connection()  # Open serial connection when the app starts
-    threading.Thread(target=read_vibration, daemon=True).start()  # Start background vibration reading thread
+    open_serial_connection()
+    threading.Thread(target=read_vibration, daemon=True).start()
     app.run(host='0.0.0.0', port=5000)
